@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
 } from 'react-native';
-import GoogleMaps from './components/maps';
+import GoogleMaps from './src/components/maps';
 import { NativeModules } from 'react-native';
 
 function App(): React.JSX.Element {

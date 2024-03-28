@@ -1,22 +1,25 @@
-import MapView, { LatLng, Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps'; // remove PROVIDER_GOOGLE import if not using Google Maps
-import { Alert, Dimensions, Image, PermissionsAndroid, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'; // remove PROVIDER_GOOGLE import if not using Google Maps
+import { Alert, Dimensions, Image, PermissionsAndroid, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import Geolocation from '@react-native-community/geolocation';
 import { useEffect, useRef, useState } from 'react';
-import { LocationData, position } from './types';
+import { position } from './types';
 import MapViewDirections from 'react-native-maps-directions';
-import { currloc } from '../../src/assets';
-import { apiKey } from '../../src/apiKey';
+import { currloc } from '../../assets';
+import { apiKey } from '../../apiKey';
 
 export default function GoogleMaps() {
     const mapRef = useRef<MapView>(null);
+    const userRef = useRef<any>(null)
     const [positions, setPosition] = useState<position>({
-            latitude: 30.92609815689669,
-            longitude: 75.88825445502076,
+        latitude: 30.92609815689669,
+        longitude: 75.88825445502076,
     });
     const [in_address, setInAddress] = useState<position>()
     const [dest, setDest] = useState<position>()
     const [direction, setDirection] = useState<boolean>(false)
+    const [coordinate, setCoordinates] = useState([])
+
     const moveto = async (positions: position) => {
         const camera = await mapRef.current?.getCamera()
         if (camera) {
@@ -24,16 +27,6 @@ export default function GoogleMaps() {
             mapRef.current?.animateCamera(camera, { duration: 1000 })
         }
     }
-
-    const interpolateCoordinates = (origin: position, destination: position, steps: number) => {
-        const coordinates = [];
-        for (let i = 0; i <= steps; i++) {
-            const lat = origin.latitude + (destination.latitude - origin.latitude) * (i / steps);
-            const lng = origin.longitude + (destination.longitude - origin.longitude) * (i / steps);
-            coordinates.push({ latitude: lat, longitude: lng });
-        }
-        return coordinates;
-    };
 
     const requestLocationPermission = async () => {
         try {
@@ -59,46 +52,17 @@ export default function GoogleMaps() {
         }
     };
 
-    const [coordinate, setCoordinates] = useState([])
-    const getwayPoits = () => {
-        fetchRouteCoordinates()
-        const coordinates = interpolateCoordinates(in_address, dest, 10);
-        setCoordinates(coordinates)
-    }
-
     const getCurrentPosition = () => {
         Geolocation.getCurrentPosition(
             (pos: any) => {
-                console.log(pos)
-                setPosition({latitude: pos.coords.latitude, longitude: pos.coords.latitude});
-                setInAddress({ latitude: pos.coords.latitude, longitude: pos.coords.latitude })
+                let currPos = { latitude: pos.coords.latitude, longitude: pos.coords.latitude }
+                setPosition(currPos);
+                setInAddress(currPos);
             },
             (error: any) => Alert.alert('GetCurrentPosition Error', JSON.stringify(error)),
             { enableHighAccuracy: true }
         );
     };
-
-    const fetchRouteCoordinates = async () => {
-        try {
-          const origin = `${in_address?.latitude} - ${in_address?.longitude}`; // Example: New York, NY
-          const destination = `${dest?.latitude} - ${dest?.longitude}`;
-          console.log(`https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}`)
-          const response = await fetch(
-            `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}`
-          );
-          const data = await response.json();
-          console.log(JSON.stringify(data))
-          if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const routeCoordinates = route.overview_polyline.points;
-            // Decode polyline to get route coordinates
-            // const decodedCoordinates = decodePolyline(routeCoordinates);
-            // setRouteCoordinates(decodedCoordinates);
-          }
-        } catch (error) {
-          console.error('Error fetching route:', error);
-        }
-      };
 
     useEffect(() => {
         requestLocationPermission()
@@ -127,33 +91,26 @@ export default function GoogleMaps() {
                         strokeWidth={6}
                         strokeColor="hotpink"
                     />}
-                {in_address && <Marker coordinate={in_address} pinColor={"blue"} title={"source"}/>}
-                {dest && <Marker coordinate={dest} pinColor={"red"} title={"destnition"}/>}
-                {coordinate.length>2 &&coordinate.map(data=>{
-                    return(
-                    <Marker coordinate={data} pinColor={"red"} title={"destnition"}/>)}
+                {in_address && <Marker coordinate={in_address} pinColor={"blue"} title={"source"} />}
+                {dest && <Marker coordinate={dest} pinColor={"red"} title={"destnition"} />}
+                {coordinate.length > 2 && coordinate.map(data => {
+                    return (
+                        <Marker coordinate={data} pinColor={"red"} title={"destnition"} />)
+                }
                 )}
-                {direction && in_address && dest && 
-                <Polyline
-                    coordinates={coordinate}
-                    strokeColor="#000"
-                    strokeWidth={6}
-                />}
             </MapView>
 
             <View style={styles.inputContainer}>
                 <GooglePlacesAutocomplete
-                    styles={styles.input}
-                    placeholder='Source Address'
-                    fetchDetails={true}
-                    currentLocation={direction ? positions:in_address}
+                    ref={userRef}
+                    styles={{ inputContainer: styles.input }}
+                    placeholder={'Source Address'}
                     onPress={(data, details = null) => {
                         let positions = {
                             latitude: details?.geometry?.location.lat || 0,
                             longitude: details?.geometry?.location.lng || 0
                         }
                         setInAddress(positions)
-                        console.log(JSON.stringify(data))
                         moveto(positions)
                     }}
                     query={{
@@ -161,7 +118,13 @@ export default function GoogleMaps() {
                         language: 'en',
                     }}
                 />
-                <TouchableOpacity style={styles.imgCon} onPress={() => getCurrentPosition()}>
+                <TouchableOpacity style={styles.imgCon} 
+                    onPress={() => {
+                        console.log(userRef.current)
+                        // userRef.current?.onFocus(false);
+                        userRef.current?.setAddressText('Your Location');
+                        moveto(positions)
+                }}>
                     <Image source={currloc} style={styles.imgStyle} />
                 </TouchableOpacity>
                 <GooglePlacesAutocomplete
@@ -182,7 +145,7 @@ export default function GoogleMaps() {
                     }}
                 />
             </View>
-            <TouchableOpacity style={styles.button} onPress={() => { setDirection(true); getwayPoits() }}>
+            <TouchableOpacity style={styles.button} onPress={() => { setDirection(true); }}>
                 <Text style={styles.textInput}>
                     Get Direction
                 </Text>
