@@ -10,22 +10,9 @@ import { apiKey } from '../../src/apiKey';
 
 export default function GoogleMaps() {
     const mapRef = useRef<MapView>(null);
-    const [position, setPosition] = useState<LocationData>({
-        coords: {
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
+    const [positions, setPosition] = useState<position>({
             latitude: 30.92609815689669,
             longitude: 75.88825445502076,
-            speed: 0,
-        },
-        extras: {
-            maxCn0: 0,
-            meanCn0: 0,
-            satellites: 0,
-        },
-        mocked: false,
-        timestamp: 0,
     });
     const [in_address, setInAddress] = useState<position>()
     const [dest, setDest] = useState<position>()
@@ -74,6 +61,7 @@ export default function GoogleMaps() {
 
     const [coordinate, setCoordinates] = useState([])
     const getwayPoits = () => {
+        fetchRouteCoordinates()
         const coordinates = interpolateCoordinates(in_address, dest, 10);
         setCoordinates(coordinates)
     }
@@ -82,7 +70,7 @@ export default function GoogleMaps() {
         Geolocation.getCurrentPosition(
             (pos: any) => {
                 console.log(pos)
-                setPosition(pos);
+                setPosition({latitude: pos.coords.latitude, longitude: pos.coords.latitude});
                 setInAddress({ latitude: pos.coords.latitude, longitude: pos.coords.latitude })
             },
             (error: any) => Alert.alert('GetCurrentPosition Error', JSON.stringify(error)),
@@ -90,11 +78,33 @@ export default function GoogleMaps() {
         );
     };
 
+    const fetchRouteCoordinates = async () => {
+        try {
+          const origin = `${in_address?.latitude} - ${in_address?.longitude}`; // Example: New York, NY
+          const destination = `${dest?.latitude} - ${dest?.longitude}`;
+          console.log(`https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}`)
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}`
+          );
+          const data = await response.json();
+          console.log(JSON.stringify(data))
+          if (data.routes && data.routes.length > 0) {
+            const route = data.routes[0];
+            const routeCoordinates = route.overview_polyline.points;
+            // Decode polyline to get route coordinates
+            // const decodedCoordinates = decodePolyline(routeCoordinates);
+            // setRouteCoordinates(decodedCoordinates);
+          }
+        } catch (error) {
+          console.error('Error fetching route:', error);
+        }
+      };
+
     useEffect(() => {
         requestLocationPermission()
         const intervalId = setInterval(requestLocationPermission, 10 * 60 * 1000);
         return () => clearInterval(intervalId);
-    }, [position.coords.latitude])
+    }, [positions.latitude])
 
     return (
         <View style={styles.container}>
@@ -103,8 +113,8 @@ export default function GoogleMaps() {
                 provider={PROVIDER_GOOGLE} // remove if not using Google Maps
                 style={styles.map}
                 initialRegion={{
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
+                    latitude: positions.latitude,
+                    longitude: positions.longitude,
                     latitudeDelta: 0.015,
                     longitudeDelta: 0.0121,
                 }}
@@ -114,12 +124,17 @@ export default function GoogleMaps() {
                         origin={in_address}
                         destination={dest}
                         apikey={apiKey}
-                        strokeWidth={3}
+                        strokeWidth={6}
                         strokeColor="hotpink"
                     />}
-                {in_address && <Marker coordinate={in_address} />}
-                {dest && <Marker coordinate={dest} />}
-                {direction && in_address && dest && <Polyline
+                {in_address && <Marker coordinate={in_address} pinColor={"blue"} title={"source"}/>}
+                {dest && <Marker coordinate={dest} pinColor={"red"} title={"destnition"}/>}
+                {coordinate.length>2 &&coordinate.map(data=>{
+                    return(
+                    <Marker coordinate={data} pinColor={"red"} title={"destnition"}/>)}
+                )}
+                {direction && in_address && dest && 
+                <Polyline
                     coordinates={coordinate}
                     strokeColor="#000"
                     strokeWidth={6}
@@ -131,6 +146,7 @@ export default function GoogleMaps() {
                     styles={styles.input}
                     placeholder='Source Address'
                     fetchDetails={true}
+                    currentLocation={direction ? positions:in_address}
                     onPress={(data, details = null) => {
                         let positions = {
                             latitude: details?.geometry?.location.lat || 0,
