@@ -105,6 +105,7 @@ export default function GoogleMaps() {
                     ref={userRef}
                     styles={{ inputContainer: styles.input }}
                     placeholder={'Source Address'}
+                    fetchDetails={true}
                     onPress={(data, details = null) => {
                         let positions = {
                             latitude: details?.geometry?.location.lat || 0,
