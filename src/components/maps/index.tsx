@@ -65,10 +65,15 @@ export default function GoogleMaps() {
     };
 
     useEffect(() => {
+        if(direction){
+            const intervalId = setInterval(requestLocationPermission, 10 * 60 * 1000);
+            return () => clearInterval(intervalId);
+        }
+    }, [direction])
+
+    useEffect(() => {
         requestLocationPermission()
-        const intervalId = setInterval(requestLocationPermission, 10 * 60 * 1000);
-        return () => clearInterval(intervalId);
-    }, [positions.latitude])
+    }, [])
 
     return (
         <View style={styles.container}>
