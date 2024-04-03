@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   SafeAreaView,
 } from 'react-native';
 import GoogleMaps from './src/components/maps';
@@ -20,7 +21,7 @@ function App(): React.JSX.Element {
     PowerSavingModeModule.isPowerSavingModeEnabled()
       .then((isEnabled: any) => {
         if(isEnabled){
-          alert("please turn off power saving mode to use google map")
+          Alert.alert("Your phone is in Power saving mode")
         }
         setIsEnabled(isEnabled)
       })
@@ -36,7 +37,7 @@ function App(): React.JSX.Element {
 
   return (
     <SafeAreaView style={{flex:1}}>
-      <GoogleMaps />
+      <GoogleMaps isEnabled={isEnabled}/>
     </SafeAreaView>
   );
 }

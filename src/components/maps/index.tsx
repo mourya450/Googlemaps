@@ -8,7 +8,10 @@ import MapViewDirections from 'react-native-maps-directions';
 import { currloc } from '../../assets';
 import { apiKey } from '../../apiKey';
 
-export default function GoogleMaps() {
+type props ={
+    isEnabled:boolean
+}
+export default function GoogleMaps(props:props) {
     const mapRef = useRef<MapView>(null);
     const userRef = useRef<any>(null)
     const [positions, setPosition] = useState<position>({
@@ -108,9 +111,39 @@ export default function GoogleMaps() {
             <View style={styles.inputContainer}>
                 <GooglePlacesAutocomplete
                     ref={userRef}
-                    styles={{ inputContainer: styles.input }}
                     placeholder={'Source Address'}
                     fetchDetails={true}
+                    textInputProps={{
+                        placeholderTextColor: 'gray',
+                        style: {
+                            backgroundColor: '#ffffff', 
+                            borderWidth: 1,
+                            borderColor: '#ccc',
+                            borderRadius: 8, 
+                            paddingHorizontal: 10, 
+                            paddingVertical: 8, 
+                            color: props.isEnabled ? '#000' : '#fff', 
+                            fontSize: 16,
+                            fontWeight: '400',
+                            width:"100%"
+                        },
+                    }}
+                    styles={{
+                        textInputContainer: {
+                            backgroundColor: 'transparent',
+                            zIndex:1,
+                        },
+                        listView: {
+                            color: '#000',
+                        },
+                        row: {
+                            backgroundColor: '#ffffff', 
+                            padding: 10,
+                        },
+                        description: {
+                            color: '#000',
+                        },
+                    }}
                     onPress={(data, details = null) => {
                         let positions = {
                             latitude: details?.geometry?.location.lat || 0,
@@ -126,17 +159,45 @@ export default function GoogleMaps() {
                 />
                 <TouchableOpacity style={styles.imgCon} 
                     onPress={() => {
-                        console.log(userRef.current)
-                        // userRef.current?.onFocus(false);
                         userRef.current?.setAddressText('Your Location');
                         moveto(positions)
                 }}>
                     <Image source={currloc} style={styles.imgStyle} />
                 </TouchableOpacity>
                 <GooglePlacesAutocomplete
-                    styles={[styles.input, { marginTop: 30 }]}
                     placeholder='Destinition addresss'
                     fetchDetails={true}
+                    textInputProps={{
+                        placeholderTextColor: 'gray',
+                        style: {
+                            backgroundColor: '#ffffff', 
+                            borderWidth: 1,
+                            borderColor: '#ccc',
+                            borderRadius: 8,
+                            paddingHorizontal: 10, 
+                            paddingVertical: 8, 
+                            color: props.isEnabled ? '#000' : '#aaa',
+                            fontSize: 16,
+                            fontWeight: '400',
+                            width:"100%"
+                        },
+                    }}
+                    styles={{
+                        textInputContainer: {
+                            backgroundColor: 'transparent',
+                            zIndex: 9999,
+                        },
+                        listView: {
+                            color: '#000',
+                        },
+                        row: {
+                            backgroundColor: '#ffffff',
+                            padding: 10,
+                        },
+                        description: {
+                            color: '#000',
+                        },
+                    }}
                     onPress={(data, details = null) => {
                         let positions = {
                             latitude: details?.geometry?.location.lat || 0,
@@ -178,7 +239,7 @@ const styles = StyleSheet.create({
         backgroundColor: "transparent",
         zIndex: 2,
         paddingTop: 20,
-        justifyContent: "space-between"
+        justifyContent: "space-between",
     },
     input: {
         paddingHorizontal: 10,
@@ -217,6 +278,7 @@ const styles = StyleSheet.create({
     imgCon: {
         position: "absolute",
         right: 20,
-        top: 30
+        top: 30,
+        zIndex:2
     }
 });
