@@ -122,7 +122,7 @@ export default function GoogleMaps(props:props) {
                             borderRadius: 8, 
                             paddingHorizontal: 10, 
                             paddingVertical: 8, 
-                            color: props.isEnabled ? '#000' : '#fff', 
+                            color: props.isEnabled ? '#000' : '#aaa', 
                             fontSize: 16,
                             fontWeight: '400',
                             width:"100%"
