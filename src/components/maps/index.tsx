@@ -1,5 +1,5 @@
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'; // remove PROVIDER_GOOGLE import if not using Google Maps
-import { Alert, Dimensions, Image, PermissionsAndroid, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Alert, AppState, Dimensions, Image, PermissionsAndroid, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import Geolocation from '@react-native-community/geolocation';
 import { useEffect, useRef, useState } from 'react';
@@ -7,13 +7,31 @@ import { position } from './types';
 import MapViewDirections from 'react-native-maps-directions';
 import { currloc } from '../../assets';
 import { apiKey } from '../../apiKey';
-
-type props ={
-    isEnabled:boolean
+import BackgroundService from 'react-native-background-actions';
+type props = {
+    isEnabled: boolean
 }
-export default function GoogleMaps(props:props) {
+
+const options = {
+    taskName: 'Example',
+    taskTitle: 'ExampleTask title',
+    taskDesc: 'ExampleTask description',
+    taskIcon: {
+        name: 'ic_launcher',
+        type: 'mipmap',
+    },
+    color: '#ff00ff',
+    linkingURI: 'yourSchemeHere://chat/jane', // See Deep Linking for more info
+    parameters: {
+        delay: 1000,
+    },
+};
+
+export default function GoogleMaps(props: props) {
     const mapRef = useRef<MapView>(null);
     const userRef = useRef<any>(null)
+    const appState = useRef(AppState.currentState);
+    const [appStateVisible, setAppStateVisible] = useState(appState.current);
     const [positions, setPosition] = useState<position>({
         latitude: 30.92609815689669,
         longitude: 75.88825445502076,
@@ -68,8 +86,8 @@ export default function GoogleMaps(props:props) {
     };
 
     useEffect(() => {
-        if(direction){
-            const intervalId = setInterval(requestLocationPermission, 10 * 60 * 1000);
+        if (direction) {
+            const intervalId = setInterval(requestLocationPermission, 5000);
             return () => clearInterval(intervalId);
         }
     }, [direction])
@@ -77,6 +95,33 @@ export default function GoogleMaps(props:props) {
     useEffect(() => {
         requestLocationPermission()
     }, [])
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (
+                appState.current.match(/inactive|background/) &&
+                nextAppState === 'active'
+            ) {
+                console.log('App has come to the foreground!');
+            }
+
+            appState.current = nextAppState;
+            setAppStateVisible(appState.current);
+            if (appState.current === "background") {
+                startBackgroundTask()
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [appStateVisible]);
+
+    const startBackgroundTask = async () => {
+        const background = await BackgroundService.start(requestLocationPermission, options);
+        console.log(background)
+    }
+
 
     return (
         <View style={styles.container}>
@@ -116,28 +161,28 @@ export default function GoogleMaps(props:props) {
                     textInputProps={{
                         placeholderTextColor: 'gray',
                         style: {
-                            backgroundColor: '#ffffff', 
+                            backgroundColor: '#ffffff',
                             borderWidth: 1,
                             borderColor: '#ccc',
-                            borderRadius: 8, 
-                            paddingHorizontal: 10, 
-                            paddingVertical: 8, 
-                            color: props.isEnabled ? '#000' : '#aaa', 
+                            borderRadius: 8,
+                            paddingHorizontal: 10,
+                            paddingVertical: 8,
+                            color: props.isEnabled ? '#000' : '#aaa',
                             fontSize: 16,
                             fontWeight: '400',
-                            width:"100%"
+                            width: "100%"
                         },
                     }}
                     styles={{
                         textInputContainer: {
                             backgroundColor: 'transparent',
-                            zIndex:1,
+                            zIndex: 1,
                         },
                         listView: {
                             color: '#000',
                         },
                         row: {
-                            backgroundColor: '#ffffff', 
+                            backgroundColor: '#ffffff',
                             padding: 10,
                         },
                         description: {
@@ -157,11 +202,11 @@ export default function GoogleMaps(props:props) {
                         language: 'en',
                     }}
                 />
-                <TouchableOpacity style={styles.imgCon} 
+                <TouchableOpacity style={styles.imgCon}
                     onPress={() => {
                         userRef.current?.setAddressText('Your Location');
                         moveto(positions)
-                }}>
+                    }}>
                     <Image source={currloc} style={styles.imgStyle} />
                 </TouchableOpacity>
                 <GooglePlacesAutocomplete
@@ -170,16 +215,16 @@ export default function GoogleMaps(props:props) {
                     textInputProps={{
                         placeholderTextColor: 'gray',
                         style: {
-                            backgroundColor: '#ffffff', 
+                            backgroundColor: '#ffffff',
                             borderWidth: 1,
                             borderColor: '#ccc',
                             borderRadius: 8,
-                            paddingHorizontal: 10, 
-                            paddingVertical: 8, 
+                            paddingHorizontal: 10,
+                            paddingVertical: 8,
                             color: props.isEnabled ? '#000' : '#aaa',
                             fontSize: 16,
                             fontWeight: '400',
-                            width:"100%"
+                            width: "100%"
                         },
                     }}
                     styles={{
@@ -279,6 +324,6 @@ const styles = StyleSheet.create({
         position: "absolute",
         right: 20,
         top: 30,
-        zIndex:2
+        zIndex: 2
     }
 });

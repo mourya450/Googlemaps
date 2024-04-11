@@ -5,15 +5,17 @@
  * @format
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   SafeAreaView,
 } from 'react-native';
 import GoogleMaps from './src/components/maps';
-import { NativeModules } from 'react-native';
+import { NativeModules, AppState } from 'react-native';
 
 function App(): React.JSX.Element {
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
   const [isEnabled,setIsEnabled] = useState<boolean>(false)
   const PowerSavingModeModule = NativeModules.PowerSavingModeModule;
 
@@ -33,6 +35,8 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     checkPowerSavingMode()
+    console.log(appState)
+    return()=>{console.log(appState)}
   }, [])
 
   return (
